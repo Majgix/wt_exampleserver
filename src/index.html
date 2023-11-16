@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebTransport Demo</title>
+</head>
+<body>
+  <button id="sendDatagramBtn" class="increment">Send Datagram</button>
+
+  <script>
+    // JavaScript code for WebTransport interaction
+    const sendDatagram = async () => {
+      const url = "https://127.0.0.1:4443";
+
+      const webTransport = new WebTransport(url);
+      console.log("Initiating connection...");
+
+      try {
+        await webTransport.ready;
+        console.log("Connection ready");
+      } catch (error) {
+        console.error("Connection failed ", error);
+      }
+
+      const writer = webTransport.datagrams.writable.getWriter();
+
+      const data = new Uint8Array([40, 44, 48]);
+      await writer.write(data);
+
+      await writer.close();
+
+      webTransport.closed
+        .then(() => {
+          console.log('Connection closed normally.');
+        })
+        .catch(() => {
+          console.error('Connection closed abruptly.', 'error');
+        });
+    };
+
+    // Attach event listener to the button
+    const sendDatagramBtn = document.getElementById('sendDatagramBtn');
+    sendDatagramBtn.addEventListener('click', sendDatagram);
+  </script>
+</body>
+</html>
