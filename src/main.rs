@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, path::PathBuf};
 
 use anyhow::Context;
 use tracing::{level_filters::LevelFilter, info};
@@ -10,6 +10,28 @@ use clap::Parser;
 struct Args {
     #[arg(short, long, default_value = "[::]:4443")]
     addr: std::net::SocketAddr,
+
+    #[clap(flatten)]
+    pub certs: Certs,
+}
+
+#[derive(Debug, Parser)]
+pub struct Certs {
+    #[clap(
+        long,
+        short,
+        default_value = "./certs/localhost.crt",
+        help = "TLS Certificate. If present, `--key` is mandatory."
+    )]
+    pub cert: PathBuf,
+
+     #[clap(
+        long,
+        short,
+        default_value = "./certs/localhost.key",
+        help = "Private key for the certificate."
+    )]
+    pub key: PathBuf,
 }
 
 
@@ -19,11 +41,10 @@ async fn main() -> anyhow::Result<()> {
 
     let args = Args::parse();
     
-    let gen = rcgen::generate_simple_self_signed(vec!["localhost".into()]).unwrap();
-
+   let Certs { cert, key } = args.certs;
     // Convert a rcgen Certificate to a rustls Certificate
-    let cert = rustls::Certificate(gen.serialize_der().unwrap());
-    let key = rustls::PrivateKey(gen.serialize_private_key_der());
+    let cert = rustls::Certificate(std::fs::read(cert)?);
+    let key = rustls::PrivateKey(std::fs::read(key)?);
     // let cert = Certificate(fs::read("./certs/localhost.pem")?);
     // let key = PrivateKey(fs::read("./certs/localhost-key.pem")?);
     
@@ -67,19 +88,12 @@ async fn handle_webtransport_conn(conn: quinn::Connecting) -> anyhow::Result<()>
    
     let session = request.ok().await.context("failed to accept session")?;
 
-    let datagram = session.read_datagram();
+    let datagram = session.read_datagram().await?;
+    let payload = datagram.payload();
+    info!("datagram received: {:?}", payload);
 
-    if let Ok(datagram) = datagram.await {
-        let q_stream_id = datagram.qstream_id();
-        let payload = datagram.payload();
-
-        info!("Received datagram with QStream ID: {:?}", q_stream_id);
-        info!("Payload: {:?}", payload);
-        session.send_datagram(payload.clone()).await?;
-        //session.send_datagram(q_stream_id, payload.clone()).await?;
-    }  else {
-        // Handle the case where awaiting the datagram fails
-        info!("invalid request");
+    for byte in payload.iter(){
+        info!("Byte: {}", byte);
     }
 
     Ok(())
