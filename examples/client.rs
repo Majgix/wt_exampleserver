@@ -40,7 +40,9 @@ async fn main() -> anyhow::Result<()> {
     let buf = Bytes::from_static(b"value");
     // Connect to the given URL.
     let session = webtransport_quinn::connect(&client, &args.url).await?;
-    session.send_datagram(buf).await?;
+    let stream_id = webtransport_proto::VarInt::MAX;
+    println!("session id: {:?}", stream_id);
+    session.send_datagram(buf, stream_id).await?;
 
     log::info!("finished Datagram transfer Succesfully!");
 

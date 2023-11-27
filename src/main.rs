@@ -89,10 +89,9 @@ async fn handle_webtransport_conn(conn: quinn::Connecting) -> anyhow::Result<()>
     let session = request.ok().await.context("failed to accept session")?;
 
     let datagram = session.read_datagram().await?;
-    let payload = datagram.payload();
-    info!("datagram received: {:?}", payload);
+    info!("datagram received: {:?}", datagram);
 
-    for byte in payload.iter(){
+    for byte in datagram.iter(){
         info!("Byte: {}", byte);
     }
 

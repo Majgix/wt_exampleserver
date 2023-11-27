@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 quinn = "0.10.2"
 webtransport-quinn ={ git = "https://github.com/kelvinkirima014/webtransport-rs.git" }
+webtransport-proto ={ git = "https://github.com/kelvinkirima014/webtransport-rs.git" }
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 anyhow = "1.0.75"
 tracing = "0.1.40"
